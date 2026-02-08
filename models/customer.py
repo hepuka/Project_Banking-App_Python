@@ -33,7 +33,8 @@ class Customer:
     # ------- TRANSACTIONS ------------
     def deposit(self, amount: int):
         if amount <= 0:
-            raise ValueError("Hibás összeg!")
+            raise ValueError("A befizetés összege csak pozitív lehet!")
+
         self.balance += amount
         self.transactions.append(Transaction("Befizetés", amount))
 

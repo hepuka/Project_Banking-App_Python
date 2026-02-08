@@ -149,7 +149,13 @@ class BankApp:
             c = self.current_customer
             print(f"\nNév: {c.name}")
             print(f"Egyenleg: {c.balance} Ft")
-            amount = int(input("Befizetendő összeg: "))
+
+            tmp = input("Befizetendő összeg: ").strip()
+
+            if not tmp.isdigit():
+                raise ValueError("Kérlek, csak pozitív számot ad meg!")
+
+            amount = int(tmp)
             self.current_customer.deposit(amount)
             self.save_data()
             print("Sikeres befizetés!")
