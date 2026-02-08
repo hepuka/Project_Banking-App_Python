@@ -1,9 +1,8 @@
-import json
 import uuid
 import sys
 from typing import List, Optional, Dict
 from models.customer import Customer
-from services.db import customers_collection, users_collection
+from services.db import customers_collection, users_collection, interest_collection, costs_collection
 
 class BankApp:
     def __init__(self):
@@ -42,14 +41,15 @@ class BankApp:
     def customer_actions_menu(self):
         menu = {
             "1": ("Ügyféladatok", self.customer_details),
-            "2": ("Tranzakciók listája", self.get_transactions),
-            "3": ("Befizetés", self.deposit),
-            "4": ("Kifizetés", self.withdraw),
-            "5": ("Utalás bankszámlára", self.transfer),
-            "6": ("Számlahitel", self.account_loan_menu),
-            "7": ("Személyi kölcsön", self.personal_loan_menu),
-            "8": ("Vissza a főmenübe", self.back_to_main_menu),
-            "9": ("Kilépés", self.exit_app)
+            "2": ("Számlaadatok", self.account_details),
+            "3": ("Tranzakciók listája", self.get_transactions),
+            "4": ("Befizetés", self.deposit),
+            "5": ("Kifizetés", self.withdraw),
+            "6": ("Utalás bankszámlára", self.transfer),
+            "7": ("Számlahitel", self.account_loan_menu),
+            "8": ("Személyi kölcsön", self.personal_loan_menu),
+            "9": ("Vissza a főmenübe", self.back_to_main_menu),
+            "0": ("Kilépés", self.exit_app)
         }
         self.run_menu(menu)
 
@@ -118,39 +118,76 @@ class BankApp:
         print(f"Új ügyfél létrehozva! Azonosító: {new_customer.id}")
 
     def find_customer(self):
-        customer_id = input("Add meg az ügyfél azonosítóját: ")
+        customer_id = input("\nAdd meg az ügyfél azonosítóját: ")
         for c in self.customers:
             if c.id == customer_id:
                 self.current_customer = c
-                print(f"Ügyfél: {c.name}")
+                self.customer_details()
                 return True
         print("Nem található ügyfél!")
         return False
 
     def customer_details(self):
         c = self.current_customer
-        print("\nÜgyféladatok:")
-        print(f"Név: {c.name}")
-        print(f"E-mail: {c.email}")
-        print(f"Számlaszám: {c.account_number}")
-        print(f"Egyenleg: {c.balance} Ft")
-        print(f"Hitelkeret: {c.loan_amount} Ft")
-        print(f"Személyi kölcsön: {c.personal_loan_amount} Ft")
+
+        rows = [
+            ("Név", c.name),
+            ("E-mail", c.email),
+            ("Számlaszám", c.account_number),
+            ("Számlanyitás", c.createdAt),
+        ]
+
+        Customer.print_table("ÜGYFÉLADATOK", rows)
+
+    def account_details(self):
+        c = self.current_customer
+
+        rows = [
+            ("Név", c.name),
+            ("Számlaszám", c.account_number),
+            ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+            ("Számlahitel összege", f"{Customer.format_amount(c.loan_amount)} Ft"),
+            ("Személyi kölcsön összege", f"{Customer.format_amount(c.personal_loan_amount)} Ft"),
+        ]
+
+        Customer.print_table("SZÁMLAADATOK", rows)
 
     def get_transactions(self):
-        print("\nTranzakciók:")
-        if len(self.current_customer.transactions) == 0:
-            print("Nincs tranzakció!")
-        for t in self.current_customer.transactions:
-            print(f"{t.timestamp} - {t.type} - {t.amount} Ft")
+        c = self.current_customer
+
+        if not c.transactions:
+            print("\nNincs tranzakció!")
+            return
+
+        print("\nTRANZAKCIÓK")
+        print(
+            f"{'Dátum'.ljust(20)} | "
+            f"{'Típus'.ljust(20)} | "
+            f"{'Név'.ljust(20)} | "
+            f"{'Számlaszám'.ljust(30)} | "
+            f"{'Összeg'}"
+        )
+
+        for t in c.transactions:
+            print(
+                f"{t.timestamp.ljust(20)} | "
+                f"{t.type.ljust(20)} | "
+                f"{t.name.ljust(20)} | "
+                f"{t.account_number.ljust(30)} | "
+                f"{t.formatted_amount()} Ft"
+            )
 
     def deposit(self):
         try:
             c = self.current_customer
-            print(f"\nNév: {c.name}")
-            print(f"Egyenleg: {c.balance} Ft")
+            rows = [
+                ("Név", c.name),
+                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ]
+            
+            Customer.print_table("ÜGYFÉLADATOK", rows)
 
-            tmp = input("Befizetendő összeg: ").strip()
+            tmp = input("\nBefizetendő összeg: ").strip()
 
             if not tmp.isdigit():
                 raise ValueError("Kérlek, csak pozitív számot ad meg!")
@@ -164,10 +201,25 @@ class BankApp:
 
     def withdraw(self):
         try:
-            amount = int(input("Kifizetendő összeg: "))
-            self.current_customer.withdraw(amount)
+            cost = self.get_cost("withdraw")
+            c = self.current_customer
+            rows = [
+                ("Név", c.name),
+                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ]
+            
+            Customer.print_table("ÜGYFÉLADATOK", rows)
+
+            tmp = input("\nKifizetendő összeg: ").strip()
+            
+            if not tmp.isdigit():
+                raise ValueError("Kérlek, csak pozitív számot adj meg!")
+
+            amount = int(tmp)
+            self.current_customer.withdraw(amount, cost)
             self.save_data()
-            print("Sikeres!")
+            print("Sikeres kifizetés!")
+
         except ValueError as e:
             print(e)
     
@@ -175,46 +227,87 @@ class BankApp:
         amount = int(input("Kölcsön összege: "))
         if self.current_customer.request_personal_loan(amount):
             self.save_data()
-            print(f"Sikeres személyi hiteligénylés: {self.current_customer.personal_loan_amount} Ft")
+            print(f"Sikeres személyi hiteligénylés: {Customer.format_amount(self.current_customer.personal_loan_amount)} Ft")
         else:
             print("Az ügyfél már rendelkezik személyi hitellel!")
     
     def repay_personal_loan(self):
-        print(f"\nFennáló hitelösszeg: {self.current_customer.personal_loan_amount} Ft")
-        amount = int(input("Törlesztés összege: "))
-        if self.current_customer.repay_personal_loan(amount):
-            self.save_data()
-            print(f"Sikeres törlesztés.\nFennálló hitelösszeg: {self.current_customer.personal_loan_amount} Ft")
-        else:
-            print("Törlesztés hiba!")
+        try:
+            c = self.current_customer
+            rows = [
+                ("Név", c.name),
+                ("Fennáló hitelösszeg", f"{Customer.format_amount(c.personal_loan_amount)} Ft"),
+                ]
+            
+            Customer.print_table("ÜGYFÉLADATOK", rows)
+
+            tmp = input("\nTörlesztés összege: ").strip()
+
+            if not tmp.isdigit():
+                raise ValueError("Kérlek, csak pozitív számot ad meg!")
+
+            amount = int(tmp)
+
+            if self.current_customer.repay_personal_loan(amount):
+                self.save_data()
+                print(f"Sikeres törlesztés.\nFennálló hitelösszeg: {Customer.format_amount(c.personal_loan_amount)} Ft")
+            else:
+                print("Törlesztés hiba!")
+
+        except ValueError as e:
+            print(e)
     
     # ---------- TRANSACTIONS ----------
     def transfer(self):
         try:
-            print(f"\nForrás számla: {self.current_customer.account_number}")
-            print(f"Egyenleg: {self.current_customer.balance} Ft\n")
+            c = self.current_customer
+            rows = [
+                ("Forrás számla", c.account_number),
+                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ]
+            
+            Customer.print_table("FORRÁS SZÁMLAADATOK", rows)
 
             target_account = input("Cél számlaszám: ").strip()
             target_customer = self.find_customer_by_account_number(target_account)
 
-            print("\nCél számlaadatok:")
-            print(f"Név: {target_customer.name}")
-            print(f"Számlaszám: {target_customer.account_number}\n")
+            rows2 = [
+                ("Név", target_customer.name),
+                ("Számlaszám", target_customer.account_number),
+                ]
+            
+            Customer.print_table("CÉL SZÁMLAADATOK", rows2)
 
             if not target_customer:
                 print("Cél számla nem található!")
                 return
 
-            amount = int(input("Utalás összege: "))
+            cost = self.get_cost("transaction")
+            tmp = input("Utalás összege: ").strip()
+            
+            if not tmp.isdigit():
+                raise ValueError("Kérlek, csak pozitív számot adj meg!")
 
-            self.current_customer.transfer_to(self.current_customer, target_customer, amount)
+            amount = int(tmp)
+            self.current_customer.transfer_to(self.current_customer, target_customer, amount, cost)
             self.save_data()
 
             print("\nSikeres utalás!")
         except ValueError as e:
             print(e)
 
+    def get_cost(self, cost_type):
+        cost_doc = costs_collection.find_one({"name": cost_type})
+        cost = cost_doc["value"]
+        return cost
+    
+    def get_interest(self, interest_type):
+        interest_doc = interest_collection.find_one({"name": interest_type})
+        interest = interest_doc["value"]
+        return interest
+    
     # ---------- EXIT ----------
     def exit_app(self):
         print("Kilépés...")
         sys.exit(0)
+    

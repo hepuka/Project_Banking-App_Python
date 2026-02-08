@@ -24,3 +24,5 @@ db = client["bank_app"]
 
 customers_collection = db["customers"]
 users_collection = db["users"]
+interest_collection = db["interest"]
+costs_collection = db["costs"]
