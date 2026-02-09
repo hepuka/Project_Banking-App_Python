@@ -45,6 +45,7 @@ class BankApp:
         }
         admin_menu = {
             "1": ("Új felhasználó hozzáadása", self.add_user),
+            "2": ("Rögzített felhasználók", self.get_users),
             "0": ("Kilépés", self.exit_app)
         }
 
@@ -131,6 +132,35 @@ class BankApp:
         self.users.append(new_user.user_to_dict())
         self.save_data()
         print(f"Új felhasználó létrehozva! Azonosító: {new_user.name}")
+
+    def get_users(self):
+        users = self.users
+
+        if not users:
+            print("\nNincs rögzített felhasználó!")
+            return
+
+        print("\nFELHASZNÁLÓK")
+        print(
+            f"{'Név'.ljust(20)} | "
+            f"{'Email'.ljust(20)} | "
+            f"{'Szerepkör'.ljust(10)} | "
+            f"{'Felhasználónév'.ljust(20)} | "
+            f"{'Jelszó'.ljust(20)} | "
+            f"{'Létrehozva'.ljust(20)} | "
+
+        )
+
+        for u in users:
+            print(
+                f"{u.get('name', '').ljust(20)} | "
+                f"{u.get('email', '').ljust(20)} | "
+                f"{u.get('role', '').ljust(10)} | "
+                f"{u.get('username', '').ljust(20)} | "
+                f"{u.get('password', '').ljust(20)} | "
+                f"{u.get('createdAt', '').ljust(20)}"
+            )
+
 
     # ---------- CUSTOMER ----------
     def find_customer_by_account_number(self, account_number: str):
@@ -333,18 +363,21 @@ class BankApp:
         except ValueError as e:
             print(e)
 
-    def get_cost(self, cost_type):
+    @staticmethod
+    def get_cost(cost_type):
         cost_doc = costs_collection.find_one({"name": cost_type})
         cost = cost_doc["value"]
         return cost
     
-    def get_interest(self, interest_type):
+    @staticmethod
+    def get_interest(interest_type):
         interest_doc = interest_collection.find_one({"name": interest_type})
         interest = interest_doc["value"]
         return interest
     
     # ---------- EXIT ----------
-    def exit_app(self):
+    @staticmethod
+    def exit_app():
         print("Kilépés...")
         sys.exit(0)
     
