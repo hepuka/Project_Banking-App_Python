@@ -41,6 +41,7 @@ class BankApp:
         user_menu = {
             "1": ("Ügyfélkereső", self.customer_menu),
             "2": ("Új ügyfél", self.add_customer),
+            "3": ("Ügyfél adatainak módosítása", self.edit_customer),
             "0": ("Kilépés", self.exit_app)
         }
         admin_menu = {
@@ -110,8 +111,6 @@ class BankApp:
                 action[1]()
             else:
                 print("Érvénytelen választás!")
-
-
 
     # ---------- USER ----------
     def add_user(self):
@@ -222,6 +221,34 @@ class BankApp:
         self.customers.append(new_customer)
         self.save_data()
         print(f"Új ügyfél létrehozva! Azonosító: {new_customer.id}")
+
+    def edit_customer(self):
+        if not self.customers:
+            print("\nNincs rögzített ügyfél!")
+            return
+
+        customer_id = input("Add meg a módosítandó ügyfél azonosítóját: ").strip()
+
+        customer = next((c for c in self.customers if c.id == customer_id), None)
+
+        if not customer:
+            print("Ügyfél nem található!")
+            return
+
+        print("\n--- Ügyféladatok módosítása ---")
+        print("(Enter = változatlan marad)\n")
+
+        name = input(f"Név [{customer.name}]: ").strip()
+        email = input(f"Email [{customer.email}]: ").strip()
+
+        if name:
+            customer.name = name
+
+        if email:
+            customer.email = email
+
+        self.save_data()
+        print("Ügyfél adatai sikeresen módosítva!")
 
     def find_customer(self):
         customer_id = input("\nAdd meg az ügyfél azonosítóját: ")
