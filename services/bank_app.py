@@ -2,6 +2,7 @@ import uuid
 import sys
 from typing import List, Optional, Dict
 from models.customer import Customer
+from models.user import User
 from services.db import customers_collection, users_collection, interest_collection, costs_collection
 
 class BankApp:
@@ -16,27 +17,39 @@ class BankApp:
 
     def load_data(self):
         self.customers = [
-            Customer(c) for c in customers_collection.find({}, {"_id": 0})
+            Customer(c)
+            for c in customers_collection.find({}, {"_id": 0})
         ]
-        self.users = list(users_collection.find({}))
+
+        self.users = list(
+            users_collection.find({}, {"_id": 0})
+        )
 
     def save_data(self):
-        customers_collection.delete_many({})
-        users_collection.delete_many({})
+        if self.customers:
+            customers_collection.delete_many({})
+            customers_collection.insert_many(
+                [c.to_dict() for c in self.customers]
+            )
 
-        customers_collection.insert_many(
-            [c.to_dict() for c in self.customers]
-        )
-        users_collection.insert_many(self.users)
+        if self.users:
+            users_collection.delete_many({})
+            users_collection.insert_many(self.users)
 
     # ---------- MENU'S ----------
     def main_menu(self):
-        menu = {
+        user_menu = {
             "1": ("Ügyfélkereső", self.customer_menu),
             "2": ("Új ügyfél", self.add_customer),
-            "3": ("Kilépés", self.exit_app)
+            "0": ("Kilépés", self.exit_app)
         }
-        self.run_menu(menu)
+        admin_menu = {
+            "1": ("Új felhasználó hozzáadása", self.add_user),
+            "0": ("Kilépés", self.exit_app)
+        }
+
+        user = self.current_user["role"]
+        self.run_menu(admin_menu if user == "admin" else user_menu)
 
     def customer_actions_menu(self):
         menu = {
@@ -83,7 +96,8 @@ class BankApp:
             return
         self.customer_actions_menu()
     
-    def run_menu(self, menu: dict):
+    @staticmethod
+    def run_menu(menu: dict):
         while True:
             print("\n---------- MENÜ ----------")
             for key, (desc, _) in menu.items():
@@ -94,6 +108,29 @@ class BankApp:
                 action[1]()
             else:
                 print("Érvénytelen választás!")
+
+
+
+    # ---------- USER ----------
+    def add_user(self):
+        name = input("Név: ")
+        email = input("Email: ")
+        username = input("Felhasználónév: ")
+        password = input("Jelszó: ")
+        tmp = input("Szerepkör: (1)user (2)admin:")
+        role = "user" if tmp == "1" else "admin"
+
+        new_user = User({
+            "name": name,
+            "email": email,
+            "username": username,
+            "password": password,
+            "role": role
+
+        })
+        self.users.append(new_user.user_to_dict())
+        self.save_data()
+        print(f"Új felhasználó létrehozva! Azonosító: {new_user.name}")
 
     # ---------- CUSTOMER ----------
     def find_customer_by_account_number(self, account_number: str):

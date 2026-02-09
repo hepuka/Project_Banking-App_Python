@@ -24,3 +24,5 @@ class Transaction:
 
     def formatted_amount(self):
         return f"{self.amount:,}".replace(",", ".")
+
+
