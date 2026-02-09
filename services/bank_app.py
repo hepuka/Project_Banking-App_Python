@@ -46,6 +46,7 @@ class BankApp:
         admin_menu = {
             "1": ("Új felhasználó hozzáadása", self.add_user),
             "2": ("Rögzített felhasználók", self.get_users),
+            "3": ("Felhasználó adatainak módosítása", self.edit_user),
             "0": ("Kilépés", self.exit_app)
         }
 
@@ -161,6 +162,44 @@ class BankApp:
                 f"{u.get('createdAt', '').ljust(20)}"
             )
 
+    def edit_user(self):
+        if not self.users:
+            print("\nNincs rögzített felhasználó!")
+            return
+
+        username = input("Add meg a módosítandó felhasználó felhasználónevét: ").strip()
+
+        user = next((u for u in self.users if u.get("username") == username), None)
+
+        if not user:
+            print("Felhasználó nem található!")
+            return
+
+        print("\n--- Felhasználó módosítása ---")
+        print("(Enter = változatlan marad)\n")
+
+        name = input(f"Név [{user.get('name')}]: ").strip()
+        email = input(f"Email [{user.get('email')}]: ").strip()
+        password = input("Jelszó [****]: ").strip()
+        role_input = input(f"Szerepkör (user/admin) [{user.get('role')}]: ").strip()
+
+        if name:
+            user["name"] = name
+
+        if email:
+            user["email"] = email
+
+        if password:
+            user["password"] = password
+
+        if role_input:
+            if role_input not in ("user", "admin"):
+                print("Hibás szerepkör! Csak 'user' vagy 'admin' lehet.")
+                return
+            user["role"] = role_input
+
+        self.save_data()
+        print("Felhasználó sikeresen módosítva!")
 
     # ---------- CUSTOMER ----------
     def find_customer_by_account_number(self, account_number: str):
