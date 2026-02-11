@@ -3,6 +3,7 @@ import sys
 from typing import List, Optional, Dict
 from models.customer import Customer
 from models.user import User
+from services.helpers import Helpers
 from services.db import customers_collection, users_collection, interest_collection, costs_collection
 
 class BankApp:
@@ -77,7 +78,7 @@ class BankApp:
     def account_loan_menu(self):
         if self.current_customer.request_account_loan():
             self.save_data()
-            print(f"Sikeres számlahitel: {Customer.format_amount(self.current_customer.loan_amount)} Ft")
+            print(f"Sikeres számlahitel: {Helpers.format_amount(self.current_customer.loan_amount)} Ft")
         else:
             print("Már van számlahitel!")
 
@@ -272,7 +273,7 @@ class BankApp:
             ("Számlanyitás", c.createdAt),
         ]
 
-        Customer.print_table("ÜGYFÉLADATOK", rows)
+        Helpers.print_table("ÜGYFÉLADATOK", rows)
 
     def account_details(self):
         c = self.current_customer
@@ -280,12 +281,12 @@ class BankApp:
         rows = [
             ("Név", c.name),
             ("Számlaszám", c.account_number),
-            ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
-            ("Számlahitel összege", f"{Customer.format_amount(c.loan_amount)} Ft"),
-            ("Személyi kölcsön összege", f"{Customer.format_amount(c.personal_loan_amount)} Ft"),
+            ("Számlaegyenleg", f"{Helpers.format_amount(c.balance)} Ft"),
+            ("Számlahitel összege", f"{Helpers.format_amount(c.loan_amount)} Ft"),
+            ("Személyi kölcsön összege", f"{Helpers.format_amount(c.personal_loan_amount)} Ft"),
         ]
 
-        Customer.print_table("SZÁMLAADATOK", rows)
+        Helpers.print_table("SZÁMLAADATOK", rows)
 
     def get_transactions(self):
         c = self.current_customer
@@ -319,10 +320,10 @@ class BankApp:
             # Első tábla (összeg nélkül)
             rows = [
                 ("Név", c.name),
-                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ("Számlaegyenleg", f"{Helpers.format_amount(c.balance)} Ft"),
             ]
 
-            Customer.print_table("BEFIZETÉS", rows)
+            Helpers.print_table("BEFIZETÉS", rows)
 
             tmp = input("\nBefizetendő összeg: ").strip()
 
@@ -334,11 +335,11 @@ class BankApp:
             # Második tábla már kitöltve
             rows = [
                 ("Név", c.name),
-                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
-                ("Befizetendő összeg", f"{Customer.format_amount(amount)} Ft")
+                ("Számlaegyenleg", f"{Helpers.format_amount(c.balance)} Ft"),
+                ("Befizetendő összeg", f"{Helpers.format_amount(amount)} Ft")
             ]
 
-            Customer.print_table("BEFIZETÉS MEGERŐSÍTÉS", rows)
+            Helpers.print_table("BEFIZETÉS MEGERŐSÍTÉS", rows)
 
             self.current_customer.deposit(amount)
             self.save_data()
@@ -354,10 +355,10 @@ class BankApp:
             c = self.current_customer
             rows = [
                 ("Név", c.name),
-                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ("Számlaegyenleg", f"{Helpers.format_amount(c.balance)} Ft"),
                 ]
             
-            Customer.print_table("ÜGYFÉLADATOK", rows)
+            Helpers.print_table("ÜGYFÉLADATOK", rows)
 
             tmp = input("\nKifizetendő összeg: ").strip()
             
@@ -376,7 +377,7 @@ class BankApp:
         amount = int(input("Kölcsön összege: "))
         if self.current_customer.request_personal_loan(amount):
             self.save_data()
-            print(f"Sikeres személyi hiteligénylés: {Customer.format_amount(self.current_customer.personal_loan_amount)} Ft")
+            print(f"Sikeres személyi hiteligénylés: {Helpers.format_amount(self.current_customer.personal_loan_amount)} Ft")
         else:
             print("Az ügyfél már rendelkezik személyi hitellel!")
     
@@ -385,10 +386,10 @@ class BankApp:
             c = self.current_customer
             rows = [
                 ("Név", c.name),
-                ("Fennáló hitelösszeg", f"{Customer.format_amount(c.personal_loan_amount)} Ft"),
+                ("Fennáló hitelösszeg", f"{Helpers.format_amount(c.personal_loan_amount)} Ft"),
                 ]
             
-            Customer.print_table("ÜGYFÉLADATOK", rows)
+            Helpers.print_table("ÜGYFÉLADATOK", rows)
 
             tmp = input("\nTörlesztés összege: ").strip()
 
@@ -399,7 +400,7 @@ class BankApp:
 
             if self.current_customer.repay_personal_loan(amount):
                 self.save_data()
-                print(f"Sikeres törlesztés.\nFennálló hitelösszeg: {Customer.format_amount(c.personal_loan_amount)} Ft")
+                print(f"Sikeres törlesztés.\nFennálló hitelösszeg: {Helpers.format_amount(c.personal_loan_amount)} Ft")
             else:
                 print("Törlesztés hiba!")
 
@@ -412,10 +413,10 @@ class BankApp:
             c = self.current_customer
             rows = [
                 ("Forrás számla", c.account_number),
-                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ("Számlaegyenleg", f"{Helpers.format_amount(c.balance)} Ft"),
                 ]
             
-            Customer.print_table("FORRÁS SZÁMLAADATOK", rows)
+            Helpers.print_table("FORRÁS SZÁMLAADATOK", rows)
 
             target_account = input("Cél számlaszám: ").strip()
             target_customer = self.find_customer_by_account_number(target_account)
@@ -425,7 +426,7 @@ class BankApp:
                 ("Számlaszám", target_customer.account_number),
                 ]
             
-            Customer.print_table("CÉL SZÁMLAADATOK", rows2)
+            Helpers.print_table("CÉL SZÁMLAADATOK", rows2)
 
             if not target_customer:
                 print("Cél számla nem található!")
