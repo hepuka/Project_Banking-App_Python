@@ -114,10 +114,10 @@ class Customer:
         second_block = str(random.randint(10_000_000, 99_999_999))
         third_block = str(random.randint(10_000_000, 99_999_999))
         return f"{first_block}-{second_block}-{third_block}"
-    
+
     @staticmethod
-    def format_amount(amount: int) -> str:
-        return f"{amount:,}".replace(",", ".")
+    def format_amount(amount) -> str:
+        return f"{int(round(amount)):,}".replace(",", ".")
 
     @staticmethod
     def print_table(title: str, rows: list[tuple[str, str]]):

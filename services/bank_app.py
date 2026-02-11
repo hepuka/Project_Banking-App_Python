@@ -52,7 +52,7 @@ class BankApp:
         }
 
         user = self.current_user["role"]
-        self.run_menu(admin_menu if user == "admin" else user_menu)
+        self.run_menu(admin_menu if user == "admin" else user_menu, "főmenü")
 
     def customer_actions_menu(self):
         menu = {
@@ -67,7 +67,7 @@ class BankApp:
             "9": ("Vissza a főmenübe", self.back_to_main_menu),
             "0": ("Kilépés", self.exit_app)
         }
-        self.run_menu(menu)
+        self.run_menu(menu, "ügyfélközpont")
 
     def customer_menu(self):
         if not self.find_customer():
@@ -77,7 +77,7 @@ class BankApp:
     def account_loan_menu(self):
         if self.current_customer.request_account_loan():
             self.save_data()
-            print(f"Sikeres számlahitel: {self.current_customer.loan_amount} Ft")
+            print(f"Sikeres számlahitel: {Customer.format_amount(self.current_customer.loan_amount)} Ft")
         else:
             print("Már van számlahitel!")
 
@@ -85,9 +85,9 @@ class BankApp:
         menu = {
             "1": ("Kölcsön igénylés", self.request_personal_loan),
             "2": ("Törlesztés", self.repay_personal_loan),
-            "3": ("Vissza az ügyfél menübe", self.back_to_customer_menu),
+            "0": ("Vissza az ügyfél menübe", self.back_to_customer_menu),
         }
-        self.run_menu(menu)
+        self.run_menu(menu, "hitel")
 
     def back_to_main_menu(self):
         self.current_customer = None
@@ -100,12 +100,14 @@ class BankApp:
         self.customer_actions_menu()
     
     @staticmethod
-    def run_menu(menu: dict):
+    def run_menu(menu: dict, name: str):
         while True:
-            print("\n---------- MENÜ ----------")
+            print("\n---------- HEPUKA BANK ZRT. -------")
+            print(f"--------------- {name.upper()} ------------")
             for key, (desc, _) in menu.items():
                 print(f"({key}) {desc}")
-            choice = input("Válassz: ")
+            print(f"------------------------------------")
+            choice = input("Kiválasztott menü: ")
             action = menu.get(choice)
             if action:
                 action[1]()
@@ -313,22 +315,36 @@ class BankApp:
     def deposit(self):
         try:
             c = self.current_customer
+
+            # Első tábla (összeg nélkül)
             rows = [
                 ("Név", c.name),
                 ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
-                ]
-            
-            Customer.print_table("ÜGYFÉLADATOK", rows)
+            ]
+
+            Customer.print_table("BEFIZETÉS", rows)
 
             tmp = input("\nBefizetendő összeg: ").strip()
 
             if not tmp.isdigit():
-                raise ValueError("Kérlek, csak pozitív számot ad meg!")
+                raise ValueError("Kérlek, csak pozitív számot adj meg!")
 
             amount = int(tmp)
+
+            # Második tábla már kitöltve
+            rows = [
+                ("Név", c.name),
+                ("Számlaegyenleg", f"{Customer.format_amount(c.balance)} Ft"),
+                ("Befizetendő összeg", f"{Customer.format_amount(amount)} Ft")
+            ]
+
+            Customer.print_table("BEFIZETÉS MEGERŐSÍTÉS", rows)
+
             self.current_customer.deposit(amount)
             self.save_data()
-            print("Sikeres befizetés!")
+
+            print("\nSikeres befizetés!")
+
         except ValueError as e:
             print(e)
 
