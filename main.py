@@ -1,12 +1,17 @@
 import time
 import webbrowser
-from services.bank_app import BankApp
+from core.bank_app import BankApp
 from web.login_server import LoginServer
 from datetime import datetime
+from ui.main_menu import MainMenu
+
 
 PORT = 8080
-0
+
 bank = BankApp()
+menu = MainMenu(bank)
+login = LoginServer(bank, PORT)
+
 bank.HTML = """
 <!doctype html>
 <html>
@@ -26,7 +31,6 @@ bank.HTML = """
 </html>
 """
 
-login = LoginServer(bank, PORT)
 login.start()
 webbrowser.open(f"http://localhost:{PORT}")
 
@@ -34,6 +38,11 @@ print("Kérlek, jelentkezz be a böngészőben...")
 while not bank.current_user:
     time.sleep(0.1)
 
-print(f"\nSIKERES BEJELENTKEZÉS\nÜgyintéző: {bank.current_user['name']}\nSzerepkör: {bank.current_user['role']}\nBejelentkezve: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}")
-bank.main_menu()
-bank.main_menu()
+print(f"""
+SIKERES BEJELENTKEZÉS.
+Név: {bank.current_user['name']}
+Szerepkör: {bank.current_user['role']}
+Idő: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+""")
+
+menu.show()

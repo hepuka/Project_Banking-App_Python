@@ -3,6 +3,7 @@ import socketserver
 import threading
 import urllib.parse
 
+
 class LoginServer:
     def __init__(self, bank, port=8080):
         self.bank = bank
@@ -10,36 +11,50 @@ class LoginServer:
         self.httpd = None
 
         class Handler(http.server.SimpleHTTPRequestHandler):
+
             def do_GET(inner_self):
                 inner_self.send_response(200)
                 inner_self.send_header("Content-type", "text/html; charset=UTF-8")
                 inner_self.end_headers()
-                inner_self.wfile.write(bank.HTML.format(error="").encode("utf-8"))
+                inner_self.wfile.write(
+                    bank.HTML.format(error="").encode("utf-8")
+                )
 
             def do_POST(inner_self):
                 length = int(inner_self.headers.get('Content-Length'))
                 body = inner_self.rfile.read(length).decode()
                 post_data = urllib.parse.parse_qs(body)
+
                 username = post_data.get("username", [""])[0]
                 password = post_data.get("password", [""])[0]
 
-                for user in bank.users:
-                    if user["username"] == username and user["password"] == password:
-                        bank.current_user = user
-                        inner_self.send_response(200)
-                        inner_self.send_header("Content-type", "text/html; charset=UTF-8")
-                        inner_self.end_headers()
-                        inner_self.wfile.write(
-                            "<h3>Sikeres bejelentkezés</h3>"
-                            "<script>setTimeout(() => window.close(), 1000);</script>".encode("utf-8")
-                        )
-                        threading.Thread(target=bank.httpd.shutdown).start()
-                        return
+                # 🔥 Itt a lényeg: már nem bank.users!
+                if bank.login(username, password):
 
+                    inner_self.send_response(200)
+                    inner_self.send_header("Content-type", "text/html; charset=UTF-8")
+                    inner_self.end_headers()
+
+                    inner_self.wfile.write(
+                        "<h3>Sikeres bejelentkezés</h3>"
+                        "<script>setTimeout(() => window.close(), 1000);</script>"
+                        .encode("utf-8")
+                    )
+
+                    # Szerver leállítása külön threadben
+                    threading.Thread(target=bank.httpd.shutdown).start()
+                    return
+
+                # Hibás adatok
                 inner_self.send_response(200)
                 inner_self.send_header("Content-type", "text/html; charset=UTF-8")
                 inner_self.end_headers()
-                inner_self.wfile.write(bank.HTML.format(error="<p style='color:red'>Hibás adatok</p>").encode("utf-8"))
+
+                inner_self.wfile.write(
+                    bank.HTML.format(
+                        error="<p style='color:red'>Hibás felhasználónév vagy jelszó</p>"
+                    ).encode("utf-8")
+                )
 
         self.Handler = Handler
 
