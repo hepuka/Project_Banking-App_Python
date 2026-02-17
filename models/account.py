@@ -46,7 +46,7 @@ class Account:
 
         self.balance += amount
         self._add_transaction(
-            c.name,
+            c.id,
             self.account_number,
             "Befizetés",
             amount
@@ -103,17 +103,17 @@ class Account:
             return False
 
         self.loan_amount = self.balance * 1.5
-        self.transactions.append(Transaction(c.name, self.account_number, "Számlahitel igénylés", self.loan_amount))
+        self.transactions.append(Transaction(c.id, self.account_number, "Számlahitel igénylés", self.loan_amount))
         return True
-    
+
     def request_personal_loan(self,current_customer, amount: int):
 
         if self.personal_loan_amount != 0:
             return False
-        
+
         if amount <= 0:
             raise ValueError("Hibás összeg!")
-        
+
         self.personal_loan_amount += amount
         self.balance += amount
         self.transactions.append(Transaction(current_customer, self.account_number, "Személyi hitel igénylés", amount))
@@ -122,15 +122,14 @@ class Account:
     def repay_personal_loan(self, account, amount: int):
         if amount <= 0:
             raise ValueError("Hibás összeg!")
-        
+
         if amount > account.personal_loan_amount:
             amount = account.personal_loan_amount
-        
+
         account.personal_loan_amount -= amount
         account.balance -= amount
         self.transactions.append(Transaction(self.name, self.account_number, "Személyi hiteltörlesztés", amount))
         return True
 
-    
-    
-    
+
+
