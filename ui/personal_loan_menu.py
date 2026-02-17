@@ -35,7 +35,22 @@ class PersonalLoanMenu(BaseMenu):
             print("Az ügyfél már rendelkezik személyi hitellel!")
 
     def repay_personal_loan(self):
-        pass
+        current_customer_id = self.bank.current_customer.id
+        account = AccountRepository.find_by_customer_id(current_customer_id)
+
+        if account.personal_loan_amount == 0:
+            print("Az ügyfélnek nincs személyi hitele.")
+            return
+
+        try:
+            amount = int(input(f"Törlesztendő összeg (max {account.personal_loan_amount} Ft): "))
+            account.repay_personal_loan(amount)
+
+            AccountRepository.save(account)
+            print(f"Sikeres törlesztés! Hátralévő személyi hitel: {account.personal_loan_amount} Ft")
+
+        except ValueError as ve:
+            print(f"Hiba: {ve}")
 
     def back_to_customer_actions_menu(self):
         from ui.customer_actions_menu import CustomerActionsMenu
