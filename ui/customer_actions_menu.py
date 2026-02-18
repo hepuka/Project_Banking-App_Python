@@ -31,7 +31,7 @@ class CustomerActionsMenu(BaseMenu):
             "7": ("Számlahitel", self.get_account_loan),
             "8": ("Személyi kölcsön", self.personal_loan_menu),
             "9": ("Vissza a főmenübe", self.back_to_main_menu),
-            "10": ("PDF kivonat export", self.export_pdf),
+            "10": ("Számlakivonat készítése", self.export_pdf),
             "0": ("Kilépés", self.exit_app)
         }
 
