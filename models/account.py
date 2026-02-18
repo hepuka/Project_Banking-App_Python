@@ -61,9 +61,9 @@ class Account:
             raise ValueError("Nincs elegendő fedezet a számlán!")
 
         self.balance -= total
-        self.transactions.append(Transaction(c.name, self.account_number, "Kifizetés", amount))
+        self.transactions.append(Transaction(c.id, self.account_number, "Kifizetés", amount))
         self.transactions.append(
-            Transaction(c.name, self.account_number, "Kifizetés költsége", round(amount * cost, 2))
+            Transaction(c.id, self.account_number, "Kifizetés költsége", round(amount * cost, 2))
         )
 
     def transfer_to(self, target_account, amount: int, cost: float, source_customer_id):
@@ -97,14 +97,6 @@ class Account:
                 amount
             )
         )
-
-    def request_account_loan(self,c):
-        if self.loan_amount != 0:
-            return False
-
-        self.loan_amount = self.balance * 1.5
-        self.transactions.append(Transaction(c.id, self.account_number, "Számlahitel igénylés", self.loan_amount))
-        return True
 
     def request_personal_loan(self,current_customer, amount: int):
 

@@ -21,7 +21,6 @@ class PersonalLoanMenu(BaseMenu):
 
         self.run(menu, "Hitel")
 
-
     def request_personal_loan(self):
         current_customer = self.bank.current_customer.id
         account = AccountRepository.find_by_customer_id(current_customer)

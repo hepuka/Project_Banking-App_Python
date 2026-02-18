@@ -166,7 +166,9 @@ class CustomerActionsMenu(BaseMenu):
 
             amount = int(tmp)
 
-            if amount > account.balance + account.loan_amount:
+            total = amount + amount * cost
+
+            if account.balance - total < -account.loan_amount:
                 raise ValueError("Nincs elegendő fedezet!")
 
             rows = [
@@ -278,7 +280,7 @@ class CustomerActionsMenu(BaseMenu):
             # Hitel igénylés és tranzakció rögzítése
             account.loan_amount = proposed_loan
             account.transactions.append(
-                    Transaction(c.name, account.account_number, "Számlahitel igénylés", proposed_loan)
+                    Transaction(c.id, account.account_number, "Számlahitel igénylés", proposed_loan)
                 )
 
             # Mentés adatbázisba
