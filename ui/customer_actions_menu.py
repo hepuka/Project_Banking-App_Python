@@ -6,7 +6,8 @@ from repositories.customer_repository import CustomerRepository
 from models.transaction import Transaction
 from repositories.account_repository import AccountRepository
 from ui.personal_loan_menu import PersonalLoanMenu
-
+from services.pdf_service import export_account_statement
+from datetime import datetime
 
 class CustomerActionsMenu(BaseMenu):
 
@@ -30,6 +31,7 @@ class CustomerActionsMenu(BaseMenu):
             "7": ("Számlahitel", self.get_account_loan),
             "8": ("Személyi kölcsön", self.personal_loan_menu),
             "9": ("Vissza a főmenübe", self.back_to_main_menu),
+            "10": ("PDF kivonat export", self.export_pdf),
             "0": ("Kilépés", self.exit_app)
         }
 
@@ -295,6 +297,34 @@ class CustomerActionsMenu(BaseMenu):
     def personal_loan_menu(self):
 
         PersonalLoanMenu(self.bank).show()
+
+    def export_pdf(self):
+        account = AccountRepository.find_by_customer_id(self.customer.id)
+
+        if not account:
+            print("Ehhez az ügyfélhez nem tartozik számla!")
+            return
+
+        print("\n--- Időszak megadása ---")
+        from_str = input("Kezdő dátum (YYYY-MM-DD) vagy Enter: ")
+        to_str = input("Záró dátum (YYYY-MM-DD) vagy Enter: ")
+
+        date_from = None
+        date_to = None
+
+        if from_str and to_str:
+            date_from = datetime.strptime(from_str, "%Y-%m-%d")
+            date_to = datetime.strptime(to_str, "%Y-%m-%d")
+
+        path = export_account_statement(
+            account,
+            self.customer,
+            date_from,
+            date_to
+        )
+
+        print("\nPDF sikeresen elkészült!")
+        print(f"Mentési hely: {path}")
 
     def back_to_main_menu(self):
         # aktuális ügyfél törlése

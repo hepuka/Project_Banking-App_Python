@@ -55,21 +55,23 @@ class Account:
     def withdraw(self, c, amount: int, cost: float):
         self._validate_positive_amount(amount)
 
-        total = amount + amount * cost
+        fee = round(amount * cost, 2)
+        total = amount + fee
 
         if self.balance - total < -self.loan_amount:
             raise ValueError("Nincs elegendő fedezet a számlán!")
 
         self.balance -= total
-        self.transactions.append(Transaction(c.id, self.account_number, "Kifizetés", amount))
+        self.transactions.append(Transaction(c.id, self.account_number, "Kifizetés", -amount))
         self.transactions.append(
-            Transaction(c.id, self.account_number, "Kifizetés költsége", round(amount * cost, 2))
+            Transaction(c.id, self.account_number, "Kifizetés költsége", -fee)
         )
 
     def transfer_to(self, target_account, amount: int, cost: float, source_customer_id):
         self._validate_positive_amount(amount)
 
-        total = amount + amount * cost
+        fee = round(amount * cost, 2)
+        total = amount + fee
 
         if self.balance - total < -self.loan_amount:
             raise ValueError("Nincs elegendő fedezet az utaláshoz!")
@@ -78,12 +80,11 @@ class Account:
         self.balance -= total
 
         self.transactions.append(
-            Transaction(target_account.customer_id,target_account.account_number, "Átutalás bankszámlára", amount)
+            Transaction(target_account.customer_id,target_account.account_number, "Átutalás bankszámlára", -amount)
         )
 
         self.transactions.append(
-            Transaction(target_account.customer_id,target_account.account_number,"Átutalás költsége",round(amount * cost, 2)
-            )
+            Transaction(target_account.customer_id,target_account.account_number,"Átutalás költsége", -fee)
         )
 
         # jóváírás
@@ -120,7 +121,7 @@ class Account:
 
         self.personal_loan_amount -= amount
         self.balance -= amount
-        self.transactions.append(Transaction(self.customer_id, self.account_number, "Személyi hiteltörlesztés", amount))
+        self.transactions.append(Transaction(self.customer_id, self.account_number, "Személyi hiteltörlesztés", -amount))
         return True
 
 
