@@ -147,32 +147,31 @@ class CustomerMenu(BaseMenu):
         customer_id = input("Add meg az ügyfél azonosítóját: ")
         current_customer = CustomerRepository.find_by_id(customer_id)
 
-        if current_customer:
-            print(f"Név: {current_customer.name}")
-            print(f"Anyja neve: {current_customer.mothers_maiden_name}")
+        if not current_customer:
+            print("Nincs ügyfél ezzel az azonosítóval")
+            return
 
-            account_type_tmp = input("Számlatípus (1)HUN (2)EUR: ")
-            account_type = "HUN" if account_type_tmp == "1" else "EUR"
+        print(f"Név: {current_customer.name}")
+        print(f"Anyja neve: {current_customer.mothers_maiden_name}")
 
-            account_data = {
-                "customer_id": current_customer.id,
-                "account_type": account_type,
-                "account_number": Helpers.generate_account_number(account_type),
-                "balance": 0,
-                "transactions": []
-            }
+        account_type_tmp = input("Számlatípus (1)HUN (2)EUR: ")
+        account_type = "HUN" if account_type_tmp == "1" else "EUR"
 
-            if account_type == "HUN":
-                account_data["loan_amount"] = 0
-                account_data["personal_loan_amount"] = 0
+        account_data = {
+            "customer_id": current_customer.id,
+            "account_type": account_type,
+            "account_number": Helpers.generate_account_number(account_type),
+            "balance": 0,
+            "transactions": []
+        }
 
-            account = Account(account_data)
-            AccountRepository.save(account)
-            print(f"Új számla sikeresen létrehozva")
-            return True
+        if account_type == "HUN":
+            account_data["loan_amount"] = 0
+            account_data["personal_loan_amount"] = 0
 
-        else:
-            return ValueError("Nincs ügyfél ezzel az azonosítóval")
+        account = Account(account_data)
+        AccountRepository.save(account)
+        print(f"Új számla sikeresen létrehozva")
 
 
 

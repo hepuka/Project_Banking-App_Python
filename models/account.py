@@ -23,7 +23,6 @@ class Account:
 
     def to_dict(self):
         data =  {
-            "customer_id": self.customer_id,
             "account_type": self.account_type,
             "account_number": self.account_number,
             "balance": self.balance,
