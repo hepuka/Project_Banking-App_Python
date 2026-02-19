@@ -65,17 +65,21 @@ class CustomerMenu(BaseMenu):
 
         CustomerRepository.create_customer(customer_data)
 
-        account = Account({
+        account_data = {
             "customer_id": customer_data.id,
             "account_type": account_type,
             "account_number": Helpers.generate_account_number(account_type),
             "balance": 0,
-            "loan_amount": 0,
-            "personal_loan_amount": 0,
             "transactions": []
-        })
+        }
 
+        if account_type == "HUN":
+            account_data["loan_amount"] = 0
+            account_data["personal_loan_amount"] = 0
+
+        account = Account(account_data)
         AccountRepository.save(account)
+
         self.bank.current_customer = customer_data
         print(f"Ügyfél létrehozva! ID: {customer_data.id}")
 

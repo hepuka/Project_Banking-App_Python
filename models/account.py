@@ -22,16 +22,20 @@ class Account:
         )
 
     def to_dict(self):
-        return {
+        data =  {
             "customer_id": self.customer_id,
             "account_type": self.account_type,
             "account_number": self.account_number,
             "balance": self.balance,
-            "loan_amount": self.loan_amount,
-            "personal_loan_amount": self.personal_loan_amount,
             "transactions": [t.to_dict() for t in self.transactions],
             "createdAt": self.createdAt
         }
+
+        if self.account_type == "HUN":
+            data["loan_amount"] = self.loan_amount
+            data["personal_loan_amount"] = self.personal_loan_amount
+
+        return data
 
     @staticmethod
     def _validate_positive_amount(amount: int):
