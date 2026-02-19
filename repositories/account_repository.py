@@ -5,11 +5,11 @@ class AccountRepository:
 
     @staticmethod
     def save(account: Account):
+        account_data = account.to_dict()
+
         customer_doc = accounts_collection.find_one(
             {"customer_id": account.customer_id}
         )
-
-        account_data = account.to_dict()
 
         if not customer_doc:
             accounts_collection.insert_one({
@@ -17,6 +17,19 @@ class AccountRepository:
                 "accounts": [account_data]
             })
             return
+
+        existing_accounts = customer_doc.get("accounts", [])
+
+        for i, acc in enumerate(existing_accounts):
+            if acc["account_number"] == account.account_number:
+
+                existing_accounts[i] = account_data
+
+                accounts_collection.update_one(
+                    {"customer_id": account.customer_id},
+                    {"$set": {"accounts": existing_accounts}}
+                )
+                return
 
         accounts_collection.update_one(
             {"customer_id": account.customer_id},

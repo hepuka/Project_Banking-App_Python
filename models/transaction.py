@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 class Transaction:
-    def __init__(self, name: str, account_number: str, type_: str, amount: float, timestamp: Optional[str] = None):
+    def     __init__(self, name: str, account_number: str, type_: str, amount: float, timestamp: Optional[str] = None):
         self.name = name
         self.account_number = account_number
         self.type = type_

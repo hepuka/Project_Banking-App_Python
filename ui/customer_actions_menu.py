@@ -56,29 +56,51 @@ class CustomerActionsMenu(BaseMenu):
         print(f"Ajtó: {self.customer.address['door_number']}")
 
     def show_account_details(self):
+        accounts = AccountRepository.find_by_customer_id(self.customer.id)
 
-        if not self.customer:
-            print("Nincs kiválasztott ügyfél!")
-            return
-
-        account = AccountRepository.find_by_customer_id(self.customer.id)
-
-        if not account:
+        if not accounts:
             print("Ehhez az ügyfélhez nem tartozik számla!")
             return
 
         print("\n--- Számlaadatok ---")
-        print(f"Számlaszám: {account.account_number}")
-        print(f"Számlaegyenleg: {Helpers.format_amount(account.balance)} Ft")
-        print(f"Számlahitel: {Helpers.format_amount(account.loan_amount)} Ft")
-        print(f"Személyi kölcsön: {Helpers.format_amount(account.personal_loan_amount)} Ft")
+
+        for acc in accounts:
+            currency = "Ft" if acc.account_type == "HUN" else "EUR"
+
+            print(f"Számlaszám: {acc.account_number}")
+            print(f"Típus: {acc.account_type}")
+            print(f"Egyenleg: {Helpers.format_amount(acc.balance)} {currency}")
+
+            if acc.account_type == "HUN":
+                print(f"Számlahitel: {Helpers.format_amount(acc.loan_amount)} {currency}")
+                print(f"Személyi kölcsön: {Helpers.format_amount(acc.personal_loan_amount)} {currency}")
+
+            print("------------------------")
+
 
     def get_transactions(self):
-        account = AccountRepository.find_by_customer_id(self.customer.id)
+        accounts = AccountRepository.find_by_customer_id(self.customer.id)
 
-        if not account.transactions:
+        if not accounts:
             print("\nNincs tranzakció!")
             return
+
+        for i, acc in enumerate(accounts, start=1):
+            print(f"{i}. {acc.account_number} | {acc.account_type.upper()}")
+
+        choice = int(input("Melyik számla tranzakcióit szeretnéd látni? "))
+
+        if choice < 1 or choice > len(accounts):
+            print("Érvénytelen választás!")
+            return
+
+        account = accounts[choice - 1]
+
+        if not account.transactions:
+            print("Nincs rögzített tranzakció!")
+            return
+
+        currency = "Ft" if account.account_type == "HUN" else "EUR"
 
         print("\nTRANZAKCIÓK")
         print(
@@ -95,24 +117,41 @@ class CustomerActionsMenu(BaseMenu):
                 f"{t.type.ljust(20)} | "
                 f"{t.name.ljust(20)} | "
                 f"{t.account_number.ljust(30)} | "
-                f"{t.formatted_amount()} Ft"
+                f"{t.formatted_amount()} {currency}"
             )
 
     def deposit(self):
         try:
             c = self.customer
-            account = AccountRepository.find_by_customer_id(self.customer.id)
 
             if not c:
                 print("Nincs kiválasztott ügyfél!")
                 return
 
-            rows = [
-                ("Név", c.name),
-                ("Számlaegyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
-            ]
+            accounts = AccountRepository.find_by_customer_id(c.id)
 
-            Helpers.print_table("BEFIZETÉS", rows)
+            if not accounts:
+                print("Ehhez az ügyfélhez nem tartozik számla!")
+                return
+
+            print("\nAz ügyfél számlái:\n")
+
+            for i, acc in enumerate(accounts, start=1):
+                print(f"{i}. {acc.account_number} | "
+                      f"{acc.account_type.upper()} | "
+                      f"Egyenleg: {Helpers.format_amount(acc.balance)}")
+
+            choice_tmp = input("\nMelyik számlára szeretnél befizetni? (szám): ").strip()
+
+            if not choice_tmp.isdigit():
+                raise ValueError("Érvénytelen választás!")
+
+            choice = int(choice_tmp)
+
+            if choice < 1 or choice > len(accounts):
+                raise ValueError("Nincs ilyen sorszámú számla!")
+
+            account = accounts[choice - 1]
 
             tmp = input("\nBefizetendő összeg: ").strip()
 
@@ -123,8 +162,9 @@ class CustomerActionsMenu(BaseMenu):
 
             rows = [
                 ("Név", c.name),
-                ("Jelenlegi számlaegyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
-                ("Befizetendő összeg", f"{Helpers.format_amount(amount)} Ft"),
+                ("Számlaszám", account.account_number),
+                ("Jelenlegi egyenleg", f"{Helpers.format_amount(account.balance)}"),
+                ("Befizetendő összeg", f"{Helpers.format_amount(amount)}"),
             ]
 
             Helpers.print_table("BEFIZETÉS MEGERŐSÍTÉS", rows)
@@ -136,32 +176,42 @@ class CustomerActionsMenu(BaseMenu):
                 return
 
             AccountService.deposit(c, account, amount)
+
             print("\nSikeres befizetés!")
 
         except ValueError as e:
             print(e)
 
     def withdraw(self):
-        #UI → CustomerService → Customer (model) → Repository → DB
         try:
             c = self.customer
-            cost = self.get_cost("withdraw")
-            account = AccountRepository.find_by_customer_id(self.customer.id)
-
 
             if not c:
                 print("Nincs kiválasztott ügyfél!")
                 return
 
-            rows = [
-                ("Név", c.name),
-                ("Számlaegyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
-                ("Számlahitel", f"{Helpers.format_amount(account.loan_amount)} Ft"),
-            ]
+            accounts = AccountRepository.find_by_customer_id(c.id)
 
-            Helpers.print_table("KIFIZETÉS", rows)
+            if not accounts:
+                print("Ehhez az ügyfélhez nem tartozik számla!")
+                return
 
-            tmp = input("\nKifizetendő összeg: ").strip()
+            print("\nAz ügyfél számlái:\n")
+
+            for i, acc in enumerate(accounts, start=1):
+                print(f"{i}. {acc.account_number} | "
+                      f"{acc.account_type} | "
+                      f"Egyenleg: {Helpers.format_amount(acc.balance)}")
+
+            choice = int(input("\nMelyik számláról szeretnél kifizetni? (szám): "))
+
+            if choice < 1 or choice > len(accounts):
+                raise ValueError("Érvénytelen választás!")
+
+            account = accounts[choice - 1]
+            cost = self.get_cost("withdraw")
+
+            tmp = input("Kifizetendő összeg: ").strip()
 
             if not tmp.isdigit():
                 raise ValueError("Kérlek, pozitív egész számot adj meg!")
@@ -175,59 +225,93 @@ class CustomerActionsMenu(BaseMenu):
 
             rows = [
                 ("Név", c.name),
-                ("Jelenlegi számlaegyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
-                ("Számlahitel", f"{Helpers.format_amount(account.loan_amount)} Ft"),
+                ("Számlaszám", account.account_number),
                 ("Kifizetendő összeg", f"{Helpers.format_amount(amount)} Ft"),
             ]
 
             Helpers.print_table("KIFIZETÉS MEGERŐSÍTÉS", rows)
 
             confirm = input("\nBiztosan végrehajtod? (i/n): ").lower()
+
             if confirm != "i":
                 print("Művelet megszakítva.")
                 return
 
-            # Service hívás
-            AccountService.withdraw(c,account, amount, cost)
+            AccountService.withdraw(c, account, amount, cost)
 
-            print("\nSikeres kifizetés!")
+            print("\nSikeres!")
 
         except ValueError as e:
             print(f"Hiba: {e}")
 
     def transfer(self):
         try:
-            source = self.customer
-            cost = self.get_cost("transaction")
-            source_account = AccountRepository.find_by_customer_id(self.customer.id)
+            source_customer = self.customer
 
-            if not source:
+            if not source_customer:
                 print("Nincs kiválasztott ügyfél!")
                 return
 
-            target_account_tmp = input("Célszámlaszám: ").strip()
-            target_account = AccountRepository.find_by_account_number(target_account_tmp)
-            target_customer = CustomerRepository.find_by_id(target_account.customer_id)
+            # Forrás számlák lekérdezése
+            accounts = AccountRepository.find_by_customer_id(source_customer.id)
+
+            if not accounts:
+                print("Ehhez az ügyfélhez nem tartozik számla!")
+                return
+
+            print("\nForrás számlák:\n")
+
+            for i, acc in enumerate(accounts, start=1):
+                print(f"{i}. {acc.account_number} | "
+                      f"{acc.account_type} | "
+                      f"Egyenleg: {Helpers.format_amount(acc.balance)}")
+
+            choice = int(input("\nMelyik számláról utalsz? (sorszám): "))
+
+            if choice < 1 or choice > len(accounts):
+                raise ValueError("Érvénytelen választás!")
+
+            source_account = accounts[choice - 1]
+
+            target_account_number = input("Célszámlaszám: ").strip()
+            target_account = AccountRepository.find_by_account_number(target_account_number)
 
             if not target_account:
                 raise ValueError("Nem található ilyen számla!")
 
+            target_customer = CustomerRepository.find_by_id(target_account.customer_id)
             print(f"Célszámlatulajdonos: {target_customer.name}")
-            tmp = input("Utalandó összeg: ").strip()
 
+            tmp = input("Utalandó összeg: ").strip()
             if not tmp.isdigit():
-                raise ValueError("Kérlek, pozitív egész számot adj meg!")
+                raise ValueError("Kérlek, pozitív számot adj meg!")
 
             amount = int(tmp)
+            cost = 0.09  # mindig 0,09 a költség
+            currency_source = source_account.account_type
+            currency_target = target_account.account_type
 
-            if amount > source_account.balance:
+            # Különböző pénznemek esetén váltás
+            if currency_source == "HUN" and currency_target == "EUR":
+                transferred_amount = round(amount / 380, 2)
+            elif currency_source == "EUR" and currency_target == "HUN":
+                transferred_amount = round(amount * 380)
+            else:
+                transferred_amount = amount
+
+            # Teljes levonás a forrás számláról (összeg + költség)
+            total_deduction = amount + cost
+
+            if source_account.balance - total_deduction < -source_account.loan_amount:
                 raise ValueError("Nincs elegendő fedezet!")
 
+            # Megerősítés táblázat
             rows = [
-                ("Küldő fél", source.name),
+                ("Küldő fél", source_customer.name),
+                ("Forrás számla", source_account.account_number),
                 ("Fogadó fél", target_customer.name),
-                ("Utalandó összeg", f"{Helpers.format_amount(amount)} Ft"),
-
+                ("Utalandó összeg", f"{Helpers.format_amount(transferred_amount)} {currency_target}"),
+                ("Költség", f"{Helpers.format_amount(cost)} {currency_source}")
             ]
 
             Helpers.print_table("UTALÁS MEGERŐSÍTÉS", rows)
@@ -237,62 +321,99 @@ class CustomerActionsMenu(BaseMenu):
                 print("Művelet megszakítva.")
                 return
 
-            # Service hívás
-            AccountService.transfer(
-                self.customer,
-                source_account,
-                target_account,
-                amount,
-                cost
+            source_account.withdraw(source_customer, amount, cost)
+            target_account.balance += transferred_amount
+            target_account.transactions.append(
+                Transaction(source_customer.id, target_account.account_number, "Átutalás jóváírás", transferred_amount)
             )
+
+            AccountRepository.save(source_account)
+            AccountRepository.save(target_account)
 
             print("\nSikeres utalás!")
 
         except ValueError as e:
             print(f"Hiba: {e}")
 
+
     def get_account_loan(self):
         try:
             c = self.customer
-            account = AccountRepository.find_by_customer_id(self.customer.id)
 
             if not c:
                 print("Nincs kiválasztott ügyfél!")
                 return
 
-            rows = [
-                ("Név", c.name),
-                ("Számlaegyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
-            ]
+            accounts = AccountRepository.find_by_customer_id(c.id)
 
-            if account.loan_amount != 0:
-                print("Már van aktív számlahitel, új hitel nem igényelhető!")
+            if not accounts:
+                print("Ehhez az ügyfélhez nem tartozik számla!")
                 return
 
-            # A hitel összege a jelenlegi egyenleg 1.5-szöröse
+            hun_accounts = [acc for acc in accounts if acc.account_type == "HUN"]
+
+            if not hun_accounts:
+                print("Számlahitel csak HUN típusú számlán igényelhető!")
+                return
+
+            print("\nHUN típusú számlák:\n")
+
+            for i, acc in enumerate(hun_accounts, start=1):
+                print(f"{i}. {acc.account_number} | "
+                      f"Egyenleg: {Helpers.format_amount(acc.balance)} Ft | "
+                      f"Számlahitel: {Helpers.format_amount(acc.loan_amount)} Ft")
+
+            choice_tmp = input("\nMelyik számlára szeretnél számlahitelt igényelni? (szám): ").strip()
+
+            if not choice_tmp.isdigit():
+                raise ValueError("Érvénytelen választás!")
+
+            choice = int(choice_tmp)
+
+            if choice < 1 or choice > len(hun_accounts):
+                raise ValueError("Nincs ilyen sorszám!")
+
+            account = hun_accounts[choice - 1]
+
+            if account.loan_amount != 0:
+                print("Már van aktív számlahitel ezen a számlán!")
+                return
+
             proposed_loan = int(account.balance * 1.5)
 
-            Helpers.print_table("Számlahiteligénylés", rows)
+            rows = [
+                ("Név", c.name),
+                ("Számlaszám", account.account_number),
+                ("Jelenlegi egyenleg", f"{Helpers.format_amount(account.balance)} Ft"),
+                ("Igényelhető hitel", f"{Helpers.format_amount(proposed_loan)} Ft"),
+            ]
 
-            confirm = input(f"Szeretnéd igényelni a {Helpers.format_amount(proposed_loan)} Ft hitelt? (i/n): ").lower()
+            Helpers.print_table("SZÁMLAHITEL IGÉNYLÉS", rows)
+
+            confirm = input("\nBiztosan igényled? (i/n): ").lower()
+
             if confirm != "i":
                 print("Művelet megszakítva.")
                 return
 
-            # Hitel igénylés és tranzakció rögzítése
             account.loan_amount = proposed_loan
-            account.transactions.append(
-                    Transaction(c.id, account.account_number, "Számlahitel igénylés", proposed_loan)
-                )
 
-            # Mentés adatbázisba
+            account.transactions.append(
+                Transaction(
+                    c.id,
+                    account.account_number,
+                    "Számlahitel igénylés",
+                    proposed_loan
+                )
+            )
+
             AccountRepository.save(account)
 
-            print(f"Sikeres számlahitel igénylés! Új hitel: {Helpers.format_amount(account.loan_amount)} Ft")
-
+            print(f"\nSikeres számlahitel igénylés!")
+            print(f"Új hitelkeret: {Helpers.format_amount(account.loan_amount)} Ft")
 
         except ValueError as e:
-            print(e)
+            print(f"Hiba: {e}")
 
     def personal_loan_menu(self):
 
