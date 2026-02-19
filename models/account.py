@@ -7,6 +7,7 @@ class Account:
     def __init__(self, data: dict):
         self.id = data.get("_id")
         self.customer_id = data["customer_id"]
+        self.account_type = data["account_type"]
         self.account_number = data["account_number"]
         self.balance = int(data.get("balance", 0))
         self.loan_amount = int(data.get("loan_amount", 0))
@@ -23,6 +24,7 @@ class Account:
     def to_dict(self):
         return {
             "customer_id": self.customer_id,
+            "account_type": self.account_type,
             "account_number": self.account_number,
             "balance": self.balance,
             "loan_amount": self.loan_amount,

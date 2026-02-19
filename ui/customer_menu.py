@@ -34,6 +34,8 @@ class CustomerMenu(BaseMenu):
         CustomerActionsMenu(self.bank).show()
 
     def add_customer(self):
+        account_type_tmp  = input("Számlatípus (1)HUN (2)EUR: ")
+        account_type = "HUN" if account_type_tmp == "1" else "EUR"
         name = input("Név: ")
         email = input("Email: ")
         mothers_maiden_name = input("Anyja neve: ")
@@ -65,7 +67,8 @@ class CustomerMenu(BaseMenu):
 
         account = Account({
             "customer_id": customer_data.id,
-            "account_number": Helpers.generate_account_number(),
+            "account_type": account_type,
+            "account_number": Helpers.generate_account_number(account_type),
             "balance": 0,
             "loan_amount": 0,
             "personal_loan_amount": 0,

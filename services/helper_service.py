@@ -3,8 +3,9 @@ import random
 class Helpers:
 
     @staticmethod
-    def generate_account_number():
-        first_block = "1177" + str(random.randint(1000, 9999))
+    def generate_account_number(account_type):
+        starter = "1177" if account_type == "HUN" else "2255"
+        first_block = starter + str(random.randint(1000, 9999))
         second_block = str(random.randint(10_000_000, 99_999_999))
         third_block = str(random.randint(10_000_000, 99_999_999))
         return f"{first_block}-{second_block}-{third_block}"
