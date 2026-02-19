@@ -15,9 +15,10 @@ class CustomerMenu(BaseMenu):
 
     def show(self):
         menu = {
-            "1": ("Ügyfél keresése", self.search_customer),
-            "2": ("Új ügyfél regisztráció", self.add_customer),
+            "1": ("Új ügyfél regisztráció", self.add_customer),
+            "2": ("Ügyfél keresése", self.search_customer),
             "3": ("Ügyfél adatainak módosítása", self.edit_customer),
+            "4": ("Új számla igénylés", self.add_new_account),
             "0": ("Kilépés", self.exit_app)
         }
 
@@ -83,7 +84,6 @@ class CustomerMenu(BaseMenu):
         self.bank.current_customer = customer_data
         print(f"Ügyfél létrehozva! ID: {customer_data.id}")
 
-
     def edit_customer(self):
         customer_id = input("Ügyfél ID: ")
         customer = CustomerRepository.find_by_id(customer_id)
@@ -142,4 +142,39 @@ class CustomerMenu(BaseMenu):
         if customer:
             self.bank.current_customer = customer  # itt frissítjük a bank current_customer-t
         return customer
+
+    def add_new_account(self):
+        customer_id = input("Add meg az ügyfél azonosítóját: ")
+        current_customer = CustomerRepository.find_by_id(customer_id)
+
+        if current_customer:
+            print(f"Név: {current_customer.name}")
+            print(f"Anyja neve: {current_customer.mothers_maiden_name}")
+
+            account_type_tmp = input("Számlatípus (1)HUN (2)EUR: ")
+            account_type = "HUN" if account_type_tmp == "1" else "EUR"
+
+            account_data = {
+                "customer_id": current_customer.id,
+                "account_type": account_type,
+                "account_number": Helpers.generate_account_number(account_type),
+                "balance": 0,
+                "transactions": []
+            }
+
+            if account_type == "HUN":
+                account_data["loan_amount"] = 0
+                account_data["personal_loan_amount"] = 0
+
+            account = Account(account_data)
+            AccountRepository.save(account)
+            print(f"Új számla sikeresen létrehozva")
+            return True
+
+        else:
+            return ValueError("Nincs ügyfél ezzel az azonosítóval")
+
+
+
+
 
