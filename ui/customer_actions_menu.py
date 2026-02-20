@@ -77,7 +77,6 @@ class CustomerActionsMenu(BaseMenu):
 
             print("------------------------")
 
-
     def get_transactions(self):
         accounts = AccountRepository.find_by_customer_id(self.customer.id)
 
@@ -334,7 +333,6 @@ class CustomerActionsMenu(BaseMenu):
 
         except ValueError as e:
             print(f"Hiba: {e}")
-
 
     def get_account_loan(self):
         try:

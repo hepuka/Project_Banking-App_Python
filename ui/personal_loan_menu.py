@@ -22,31 +22,91 @@ class PersonalLoanMenu(BaseMenu):
         self.run(menu, "Hitel")
 
     def request_personal_loan(self):
-        current_customer = self.bank.current_customer.id
-        account = AccountRepository.find_by_customer_id(current_customer)
-        amount = int(input("Kölcsön összege: "))
+        current_customer = self.bank.current_customer
 
-        if account.request_personal_loan(current_customer, amount):
-            AccountRepository.save(account)
-            print(f"Sikeres személyi hiteligénylés: {Helpers.format_amount(account.personal_loan_amount)} Ft")
+        accounts = AccountRepository.find_by_customer_id(current_customer.id)
 
-        else:
-            print("Az ügyfél már rendelkezik személyi hitellel!")
-
-    def repay_personal_loan(self):
-        current_customer_id = self.bank.current_customer.id
-        account = AccountRepository.find_by_customer_id(current_customer_id)
-
-        if account.personal_loan_amount == 0:
-            print("Az ügyfélnek nincs személyi hitele.")
+        if not accounts:
+            print("Ehhez az ügyfélhez nem tartozik számla!")
             return
 
+        hun_accounts = [acc for acc in accounts if acc.account_type == "HUN"]
+
+        if not hun_accounts:
+            print("Személyi kölcsön csak HUN számlán igényelhető!")
+            return
+
+        print("\nHUN számlák:\n")
+
+        for i, acc in enumerate(hun_accounts, start=1):
+            print(f"{i}. {acc.account_number} | "
+                  f"Egyenleg: {Helpers.format_amount(acc.balance)} Ft | "
+                  f"Személyi hitel: {Helpers.format_amount(acc.personal_loan_amount)} Ft")
+
         try:
+            choice = int(input("\nMelyik számlára igényled? (sorszám): "))
+
+            if choice < 1 or choice > len(hun_accounts):
+                raise ValueError("Érvénytelen választás!")
+
+            account = hun_accounts[choice - 1]
+
+            if account.personal_loan_amount != 0:
+                print("Ezen a számlán már van személyi hitel!")
+                return
+
+            amount = int(input("Kölcsön összege: "))
+
+            account.request_personal_loan(current_customer.id, amount)
+
+            AccountRepository.save(account)
+
+            print(f"\nSikeres hiteligénylés!")
+            print(f"Új személyi hitel: {Helpers.format_amount(account.personal_loan_amount)} Ft")
+
+        except ValueError as ve:
+            print(f"Hiba: {ve}")
+
+    def repay_personal_loan(self):
+        current_customer = self.bank.current_customer
+
+        accounts = AccountRepository.find_by_customer_id(current_customer.id)
+
+        if not accounts:
+            print("Ehhez az ügyfélhez nem tartozik számla!")
+            return
+
+        loan_accounts = [
+            acc for acc in accounts
+            if acc.account_type == "HUN" and acc.personal_loan_amount > 0
+        ]
+
+        if not loan_accounts:
+            print("Nincs törleszthető személyi hitel.")
+            return
+
+        print("\nHitelek:\n")
+
+        for i, acc in enumerate(loan_accounts, start=1):
+            print(f"{i}. {acc.account_number} | "
+                  f"Hátralévő hitel: {Helpers.format_amount(acc.personal_loan_amount)} Ft")
+
+        try:
+            choice = int(input("\nMelyik számlán szeretnél törleszteni? (sorszám): "))
+
+            if choice < 1 or choice > len(loan_accounts):
+                raise ValueError("Érvénytelen választás!")
+
+            account = loan_accounts[choice - 1]
+
             amount = int(input(f"Törlesztendő összeg (max {account.personal_loan_amount} Ft): "))
+
             account.repay_personal_loan(amount)
 
             AccountRepository.save(account)
-            print(f"Sikeres törlesztés! Hátralévő személyi hitel: {account.personal_loan_amount} Ft")
+
+            print(f"\nSikeres törlesztés!")
+            print(f"Hátralévő hitel: {Helpers.format_amount(account.personal_loan_amount)} Ft")
 
         except ValueError as ve:
             print(f"Hiba: {ve}")
