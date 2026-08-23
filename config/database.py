@@ -26,16 +26,15 @@ class Database:
             cls._client.server_info()
             cls._db = cls._client["bank_app"]
 
+            print("--- Kapcsolat az adatbázissal létrejött ---")
+
             return cls._db
 
         except errors.ServerSelectionTimeoutError as e:
             raise RuntimeError(
                 "Nem sikerült csatlakozni a MongoDB Atlas-hoz. "
-                "Ellenőrizd az IP whitelistet és a tanúsítványokat."
             ) from e
 
-
-# Collection getterek
 db = Database.connect()
 
 customers_collection = db["customers"]
