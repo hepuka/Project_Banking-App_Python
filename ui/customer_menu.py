@@ -32,7 +32,11 @@ class CustomerMenu(BaseMenu):
             print("Nem található!")
             return
 
-        CustomerActionsMenu(self.bank).show()
+        print(f"\nÜgyfél neve: {customer.name}")
+        print(f"Anyja neve: {customer.mothers_maiden_name}")
+        print(f"Személyi igazolvány száma: {customer.personal_id_card_number}")
+
+        self.after_action_menu(CustomerActionsMenu(self.bank), "Ügyfélmenü megjelenítése")
 
     def add_customer(self):
         account_type_tmp  = input("Számlatípus (1)HUN (2)EUR: ")
@@ -83,6 +87,8 @@ class CustomerMenu(BaseMenu):
 
         self.bank.current_customer = customer_data
         print(f"Ügyfél létrehozva! ID: {customer_data.id}")
+
+        self.after_action_menu()
 
     def edit_customer(self):
         customer_id = input("Ügyfél ID: ")

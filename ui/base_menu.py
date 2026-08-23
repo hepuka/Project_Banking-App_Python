@@ -15,13 +15,36 @@ class BaseMenu:
 
             print("------------------------------")
 
-            choice = input("Választott menüpont: ")
+            choice = input("\nVálasztott menüpont: ")
             action = menu.get(choice)
 
             if action:
-                action[1]()
+                result = action[1]()
+
+                if result is False:
+                    break
             else:
-                print("Érvénytelen menüpont!")
+                print("\nÉrvénytelen menüpont!")
+
+    def after_action_menu(self, next_menu=None, menu_name ="Főmenü megjelenítése"):
+        print("\n------------------------------")
+        print(f"    (1) {menu_name}")
+        print("    (0) Kilépés a programból")
+        print("------------------------------\n")
+
+        while True:
+            choice = input("Választott menü: ").strip()
+
+            if choice == "1":
+                if next_menu:
+                    next_menu.show()
+                return
+
+            elif choice == "0":
+                self.exit_app()
+
+            else:
+                print("Érvénytelen választás!")
 
     @staticmethod
     def exit_app():

@@ -5,7 +5,7 @@ import termios
 from core.bank_app import BankApp
 from datetime import datetime
 from ui.main_menu import MainMenu
-
+from repositories.user_repository import UserRepository
 
 def get_password():
     print("Jelszó: ", end="", flush=True)
@@ -57,12 +57,15 @@ while not bank.current_user:
 
     if bank.login(username, password):
 
+        login_data = UserRepository.update_last_login(username)
+
         print(f"""
-SIKERES BEJELENTKEZÉS.
-Név: {bank.current_user['name']}
-Szerepkör: {bank.current_user['role']}
-Bejelentkezési idő: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-""")
+        SIKERES BEJELENTKEZÉS.
+        Név: {bank.current_user['name']}
+        Szerepkör: {bank.current_user['role']}
+        Bejelentkezési idő: {login_data['loginAt']}
+        Gépnév: {login_data['hostname']}
+        """)
 
         menu.show()
 

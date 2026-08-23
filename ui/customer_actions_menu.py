@@ -19,7 +19,6 @@ class CustomerActionsMenu(BaseMenu):
             return self.bank.current_customer
 
     def show(self):
-        print(f"Ügyfél neve: {self.customer.name}")
 
         menu = {
             "1": ("Ügyféladatok", self.show_customer_details),
@@ -55,6 +54,8 @@ class CustomerActionsMenu(BaseMenu):
         print(f"Emelet: {self.customer.address['floor']}")
         print(f"Ajtó: {self.customer.address['door_number']}")
 
+        self.after_action_menu()
+
     def show_account_details(self):
         accounts = AccountRepository.find_by_customer_id(self.customer.id)
 
@@ -77,6 +78,8 @@ class CustomerActionsMenu(BaseMenu):
 
             print("------------------------")
 
+            self.after_action_menu()
+
     def get_transactions(self):
         accounts = AccountRepository.find_by_customer_id(self.customer.id)
 
@@ -96,7 +99,8 @@ class CustomerActionsMenu(BaseMenu):
         account = accounts[choice - 1]
 
         if not account.transactions:
-            print("Nincs rögzített tranzakció!")
+            print("\nNincs rögzített tranzakció!")
+            self.after_action_menu()
             return
 
         currency = "Ft" if account.account_type == "HUN" else "EUR"
@@ -118,6 +122,8 @@ class CustomerActionsMenu(BaseMenu):
                 f"{t.account_number.ljust(30)} | "
                 f"{t.formatted_amount()} {currency}"
             )
+
+        self.after_action_menu()
 
     def deposit(self):
         try:
@@ -181,6 +187,8 @@ class CustomerActionsMenu(BaseMenu):
         except ValueError as e:
             print(e)
 
+        self.after_action_menu()
+
     def withdraw(self):
         try:
             c = self.customer
@@ -242,6 +250,8 @@ class CustomerActionsMenu(BaseMenu):
 
         except ValueError as e:
             print(f"Hiba: {e}")
+
+        self.after_action_menu()
 
     def transfer(self):
         try:
@@ -334,6 +344,8 @@ class CustomerActionsMenu(BaseMenu):
         except ValueError as e:
             print(f"Hiba: {e}")
 
+        self.after_action_menu()
+
     def get_account_loan(self):
         try:
             c = self.customer
@@ -413,6 +425,8 @@ class CustomerActionsMenu(BaseMenu):
         except ValueError as e:
             print(f"Hiba: {e}")
 
+        self.after_action_menu()
+
     def personal_loan_menu(self):
 
         PersonalLoanMenu(self.bank).show()
@@ -444,6 +458,8 @@ class CustomerActionsMenu(BaseMenu):
 
         print("\nPDF sikeresen elkészült!")
         print(f"Mentési hely: {path}")
+
+        self.after_action_menu()
 
     def back_to_main_menu(self):
         # aktuális ügyfél törlése

@@ -1,4 +1,6 @@
 from config.database import users_collection
+from datetime import datetime
+import socket
 
 class UserRepository:
 
@@ -24,3 +26,22 @@ class UserRepository:
     @staticmethod
     def delete_user(username: str):
         users_collection.delete_one({"username": username})
+
+    @staticmethod
+    def update_last_login(username: str):
+
+        login_data = {
+            "loginAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "hostname": socket.gethostname()
+        }
+
+        users_collection.update_one(
+            {"username": username},
+            {
+                "$push": {
+                    "login_history": login_data
+                }
+            }
+        )
+
+        return login_data

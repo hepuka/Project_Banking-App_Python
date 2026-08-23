@@ -10,7 +10,7 @@ class AdminMenu(BaseMenu):
             "2": ("Felhasználók listázása", self.get_users),
             "3": ("Felhasználó adatainak módosítása", self.edit_user),
             "4": ("Felhasználó törlése", self.delete_user),
-            "0": ("Kilépés", self.exit_app)
+            "0": ("Kilépés a programból", self.exit_app)
         }
 
         self.run(menu, "Felhasználókezelés")
@@ -33,7 +33,9 @@ class AdminMenu(BaseMenu):
         }
 
         UserRepository.create_user(user_data)
-        print(f"Felhasználó sikeresen létrehozva. Név: {user_data['name']} ")
+        print(f"\nFelhasználó sikeresen létrehozva. Név: {user_data['name']} ")
+
+        self.after_action_menu()
 
     def get_users(self):
         users = UserRepository.get_all()
@@ -49,18 +51,31 @@ class AdminMenu(BaseMenu):
             f"{'Szerepkör'.ljust(10)} | "
             f"{'Felhasználónév'.ljust(20)} | "
             f"{'Létrehozva'.ljust(20)} | "
-            f"{'Módosítva'.ljust(20)}"
+            f"{'Módosítva'.ljust(20)} | "
+            f"{'Utolsó bejelentkezés'.ljust(25)}"
         )
+        print("-" * 150)
 
         for u in users:
+
+            login_history = u.get("login_history", [])
+
+            if login_history:
+                last_login = login_history[-1].get("loginAt", "-")
+            else:
+                last_login = "-"
+
             print(
                 f"{u.get('name', '').ljust(20)} | "
                 f"{u.get('email', '').ljust(20)} | "
                 f"{u.get('role', '').ljust(10)} | "
                 f"{u.get('username', '').ljust(20)} | "
                 f"{u.get('createdAt', '').ljust(20)} | "
-                f"{u.get('modifiedAt', '-').ljust(20)}"
+                f"{u.get('modifiedAt', '-').ljust(20)} | "
+                f"{last_login.ljust(25)}"
             )
+
+        self.after_action_menu()
 
     def edit_user(self):
         username = input("Add meg a felhasználónevet: ")
@@ -91,21 +106,27 @@ class AdminMenu(BaseMenu):
         updates["modifiedAt"] = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
         UserRepository.update_user(username, updates)
-        print("A felhasználó adatai sikeresen módosítva!")
+        print("\nA felhasználó adatai sikeresen módosítva!")
+
+        self.after_action_menu()
 
     def delete_user(self):
         username = input("Add meg a törlendő felhasználó felhasználónevét: ")
         user = UserRepository.find_by_username(username)
 
         if not user:
-            print("Nincs ilyen regisztrált felhasználó.")
-            return False
+            print("\nNincs ilyen regisztrált felhasználó.")
+            self.after_action_menu()
+            return True
 
-        tmp = input("Biztosan törölni szeretnéd a felhasználót? (I) Igen (N) Mégsem: ").lower()
+        tmp = input(f"Biztosan törölni szeretnéd a - {username} - felhasználót? (I) Igen (N) Mégsem: ").lower()
         if tmp=="i":
             UserRepository.delete_user(username)
-            print("Felhasználó sikeresen törölve")
+            print("\nFelhasználó sikeresen törölve")
+            self.after_action_menu()
             return True
         else:
-            print("Felhasználó törlése megszakítva.")
-            return False
+            print("\nFelhasználó törlése megszakítva.")
+            self.after_action_menu()
+            return True
+
